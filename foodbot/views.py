@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from django.http import HttpResponse
+
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render
+from django.shortcuts import render, render_to_response
 import json
+import time
 # Create your views here.
 from models import UserInfo
-from functions import get_recipient_id, get_started, get_location, post_message, generic_template, demo_display, check_template, quick_replies, check_quick_replies
+from functions import get_recipient_id, get_started, get_location, \
+    post_message, generic_template, demo_display, \
+    check_template, quick_replies, check_quick_replies, get_location_status, template, order_placed
 
 def verify_token(request):
     if (request.GET['hub.verify_token'] == 'hunger'):
@@ -48,6 +52,7 @@ def webhook(request):
 
         if k.state == 0:
             try:
+                time.sleep(3)
                 lat, long = get_location(recipient_id, body)
                 k.lat = lat
                 k.served = 0
@@ -56,14 +61,21 @@ def webhook(request):
                 k.save()
 
             except:
+
                 post_message(recipient_id,'Please use the + sign and the location option to give us your location for the pickup')
 
-        if k.state == 1:
-            # location detect webhook
-            generic_template(recipient_id)
-            k.state = 2
-            k.save()
+                return HttpResponse(status=200)
 
+        if k.state == 1:
+            if get_location_status(k.lat, k.long):
+                generic_template(recipient_id)
+                k.state = 2
+                k.save()
+            else:
+                post_message(recipient_id,'Sorry, we dont service your area at the moment. Check back with u soon though, we are constantly adding')
+                k.state = 0
+                k.save()
+            return HttpResponse(status=200)
 
         if k.state == 2:
 
@@ -75,9 +87,11 @@ def webhook(request):
                 k.save()
 
         if k.state == 3:
-            post_message(recipient_id, 'Please tell us how many people do you think your excess food would serve. Dont fret, just give us an estimate. ')
             k.state = 4
             k.save()
+            post_message(recipient_id, 'Please tell us how many people do you think your excess food would serve. Dont fret, just give us an estimate. ')
+            return HttpResponse(status=200)
+
 
         if k.state == 4:
             try:
@@ -93,6 +107,8 @@ def webhook(request):
             except:
                 k.state = 3
                 k.save()
+            return HttpResponse(status=200)
+
 
         if k.state == 5:
             state = check_quick_replies(recipient_id, body)
@@ -100,14 +116,17 @@ def webhook(request):
             k.save()
 
         if k.state == 6:
+            status = order_placed(k.lat, k.long, k.name, k.counter)
+            print status
             post_message(recipient_id, 'Thank you for your contibution, our delivery executive will be here to pick your food up in about 30 minutes')
-            # Ping backend with order created and people served
+            k.counter += 1
+            k.state = 7
             k.save()
 
-        if k.state == 7:
-            # Contribution received POST req
-            post_message(recipient_id, 'Your contribution has reached ')
-
+        if k.state == 8:
+            k.state = 1
+            post_message(recipient_id, 'Enter anything to reset the bot and make a fresh donation!')
+            k.save()
 
 
         return HttpResponse(status=200)
@@ -115,7 +134,28 @@ def webhook(request):
     if request.method == 'GET':
         return verify_token(request)
 
-#
-# def food_center_webhook(request):
-#     if request.method == 'POST':
+@csrf_exempt
+def food_center_webhook(request):
+    if request.method == 'POST':
+        body = json.loads(request.body.decode('utf-8'))
+        val = body["deliverystatus"]
+        rec_id = body["userid"]
+        print val, rec_id
+        k = UserInfo.objects.get(name = rec_id)
+        if k.state == 7:
+
+                # Contribution received POST req
+            template(rec_id, 'Raju')
+            k.state = 8
+            k.save()
+
+    if request.method == 'OPTIONS':
+        response = render_to_response('temp.html', {})
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'POST'
+        response['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+
+    return HttpResponse(status=200)
+
 
