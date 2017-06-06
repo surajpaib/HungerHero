@@ -1,0 +1,590 @@
+{
+  "function": "elth-diagnosis-collecting-chief-complaint-function",
+  "questions": [
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'parameters' in self.temp_vars",
+          "len(parameters['symptom']) > 0"
+        ]
+      ],
+      "formula": "parameters['symptom']",
+      "type": "primary_symptom_list"
+    },
+    {
+      "accepted_intent": [
+        {
+          "formula": "'yes'",
+          "intentName": "yes_intent",
+          "parameters": "'null'"
+        },
+        {
+          "formula": "'no'",
+          "intentName": "no_intent",
+          "parameters": "'null'"
+        }
+      ],
+      "conditions": [
+        [
+          "'prev_primary_symptom' in self.global_vars.keys()",
+          "'primary_symptom' not in self.temp_vars",
+          "'diagnosis_entry' not in self.temp_vars",
+          "'parameters' not in rco.keys()"
+        ],
+        [
+          "'prev_primary_symptom' in self.global_vars.keys()",
+          "'primary_symptom' not in self.temp_vars",
+          "'diagnosis_entry' in self.temp_vars",
+          "diagnosis_entry != 'symptom-menu'"
+        ]
+      ],
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "text": "You complained of %s, sometime back. Should I diagnose for the same?",
+      "text_case": "True",
+      "text_var": [
+        "prev_primary_symptom"
+      ],
+      "type": "prev_primary_symptom_response"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'primary_symptom_list' in self.temp_vars.keys()",
+          "'parameters' not in self.temp_vars"
+        ]
+      ],
+      "formula": "self.temp_vars.clear()"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'primary_symptom_list' not in self.temp_vars.keys()"
+        ]
+      ],
+      "formula": "[]",
+      "type": "primary_symptom_list"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'prev_primary_symptom' in self.global_vars.keys()",
+          "prev_primary_symptom_response == 'yes'"
+        ]
+      ],
+      "formula": "primary_symptom_list.append(prev_primary_symptom)"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'prev_primary_symptom' in self.global_vars.keys()",
+          "prev_primary_symptom_response == 'no'"
+        ]
+      ],
+      "formula": "self.global_vars.pop('prev_primary_symptom', None)"
+    },
+    {
+      "accepted_intent": [
+        {
+          "intentName": "symptoms",
+          "parameters": "['symptom']"
+        },
+        {
+          "intentName": "symptoms",
+          "parameters": "['incomplete_symptom']"
+        },
+        {
+          "intentName": "incomplete_symptoms",
+          "parameters": "['incomplete_symptom']"
+        },
+        {
+          "intentName": "body_parts",
+          "parameters": "['body_part']"
+        },
+        {
+          "intentName": "symptoms",
+          "parameters": "['body_part']"
+        },
+        {
+          "intentName": "symptoms",
+          "parameters": "['region']"
+        },
+        {
+          "intentName": "symptoms",
+          "parameters": "['intensity']"
+        },
+        {
+          "intentName": "symptoms",
+          "parameters": "['onset']"
+        },
+        {
+          "intentName": "symptoms",
+          "parameters": "['duration']"
+        },
+        {
+          "intentName": "diagnosis",
+          "parameters": "['symptom']"
+        },
+        {
+          "intentName": "diagnosis",
+          "parameters": "['incomplete_symptom']"
+        },
+        {
+          "intentName": "diagnosis",
+          "parameters": "['body_part']"
+        },
+        {
+          "intentName": "diagnosis",
+          "parameters": "['region']"
+        },
+        {
+          "intentName": "diagnosis",
+          "parameters": "['intensity']"
+        },
+        {
+          "intentName": "diagnosis",
+          "parameters": "['onset']"
+        },
+        {
+          "intentName": "diagnosis",
+          "parameters": "['duration']"
+        },
+        {
+          "intentName": "conditions",
+          "parameters": "['condition']"
+        },
+        {
+          "intentName": "treatments",
+          "parameters": "['treatment']"
+        }
+      ],
+      "conditions": [
+        [
+          "'primary_symptom_list' not in self.temp_vars",
+          "'chief_complaint_user_input' not in self.temp_vars",
+          "'symptom_string' not in self.temp_vars"
+        ],
+        [
+          "len(primary_symptom_list) == 0",
+          "'chief_complaint_user_input' not in self.temp_vars",
+          "'symptom_string' not in self.temp_vars"
+        ]
+      ],
+      "text": "Please tell me your chief complaint or primary symptom!",
+      "type": "chief_complaint_user_input"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'incomplete_symptom' in chief_complaint_user_input.keys()",
+          "'body_part' in chief_complaint_user_input.keys()"
+        ]
+      ],
+      "formula": "temp",
+      "query": [
+        {
+          "db": "dynamo",
+          "key": "body_part",
+          "key_value": "chief_complaint_user_input['body_part'][0].lower()",
+          "method": "get",
+          "table": "body_part_symptoms",
+          "values": "['incomplete_symptoms']"
+        }
+      ],
+      "type": "temp_mapped_symptom"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'temp_mapped_symptom' in self.temp_vars",
+          "len(temp_mapped_symptom) > 0"
+        ]
+      ],
+      "formula": "temp_mapped_symptom[chief_complaint_user_input['incomplete_symptom'][0]]",
+      "type": "chief_complaint_user_input['mapped_symptom']"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'incomplete_symptom' in chief_complaint_user_input.keys()",
+          "'mapped_symptom' not in chief_complaint_user_input.keys()"
+        ]
+      ],
+      "formula": "temp",
+      "query": [
+        {
+          "db": "dynamo",
+          "key": "key",
+          "key_value": "chief_complaint_user_input['incomplete_symptom'][0].lower()",
+          "method": "get",
+          "sort_key": "type",
+          "sort_key_value": "'incomplete_symptom_to_symptom_mapping'",
+          "table": "mappings",
+          "values": "['symptoms']"
+        }
+      ],
+      "type": "ic_symptom_options_list"
+    },
+    {
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'incomplete_symptom' in chief_complaint_user_input.keys()",
+          "ic_symptom_options_list == 'None'"
+        ]
+      ],
+      "goto_index": "2",
+      "instruction": "Sorry, either you gave me a disease name or an incomplete symptom. Can you please try again?"
+    },
+    {
+      "accepted_intent": [
+        {
+          "intentName": "symptoms",
+          "parameters": "['symptom']"
+        }
+      ],
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'incomplete_symptom' in chief_complaint_user_input.keys()",
+          "ic_symptom_options_list != 'None'"
+        ]
+      ],
+      "options": "ic_symptom_options_list",
+      "text": "That's incomplete info for me. Please pick your symptom from these?",
+      "type": "symptom"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'parameters' in rco.keys()",
+          "'chief_complaint_user_input' in rco.keys()",
+          "'incomplete_symptom' not in chief_complaint_user_input.keys()",
+          "'body_part' in chief_complaint_user_input.keys()"
+        ]
+      ],
+      "formula": "temp.keys()",
+      "query": [
+        {
+          "db": "dynamo",
+          "key": "body_part",
+          "key_value": "chief_complaint_user_input['body_part'][0].lower()",
+          "method": "get",
+          "table": "body_part_symptoms",
+          "values": "['incomplete_symptoms']"
+        }
+      ],
+      "type": "incomplete_symptoms_list"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'incomplete_symptoms_list' in rco.keys()",
+          "incomplete_symptoms_list != 'False'",
+          "len(incomplete_symptoms_list)>0"
+        ]
+      ],
+      "formula": "incomplete_symptoms_list",
+      "type": "symptoms_list"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'incomplete_symptom' not in chief_complaint_user_input.keys()",
+          "'body_part' in chief_complaint_user_input.keys()"
+        ]
+      ],
+      "formula": "symptoms_list.extend(temp)",
+      "query": [
+        {
+          "db": "dynamo",
+          "key": "body_part",
+          "key_value": "chief_complaint_user_input['body_part'][0].lower()",
+          "method": "get",
+          "table": "body_part_symptoms",
+          "values": "['symptoms']"
+        }
+      ]
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'symptoms_list' in self.temp_vars",
+          "len(symptoms_list)>10"
+        ]
+      ],
+      "formula": "symptoms_list[:10]",
+      "type": "symptoms_options_list"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'symptoms_list' in self.temp_vars",
+          "len(symptoms_list)<=10"
+        ]
+      ],
+      "formula": "symptoms_list",
+      "type": "symptoms_options_list"
+    },
+    {
+      "accepted_intent": [
+        {
+          "intentName": "symptoms",
+          "parameters": "['symptom']"
+        },
+        {
+          "intentName": "symptoms",
+          "parameters": "['incomplete_symptom']"
+        },
+        {
+          "intentName": "incomplete_symptoms",
+          "parameters": "['incomplete_symptom']"
+        }
+      ],
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'incomplete_symptom' not in chief_complaint_user_input.keys()",
+          "'body_part' in chief_complaint_user_input.keys()",
+          "'symptoms_list' in rco.keys()",
+          "len(symptoms_list)>0"
+        ]
+      ],
+      "options": "symptoms_options_list",
+      "text": "I did not quite get your problem. Please tell me what symptom do you observe in/on your %s?",
+      "text_case": "True",
+      "text_var": [
+        "chief_complaint_user_input['body_part'][0]"
+      ],
+      "type": "incomplete_symptom"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'incomplete_symptom' not in chief_complaint_user_input.keys()",
+          "'body_part' in chief_complaint_user_input.keys()",
+          "'symptoms_options_list' in rco.keys()",
+          "len(symptoms_options_list)>0",
+          "'incomplete_symptom' in rco.keys()",
+          "incomplete_symptom not in incomplete_symptoms_list"
+        ]
+      ],
+      "formula": "incomplete_symptom",
+      "type": "symptom"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'symptoms_options_list' in rco.keys()",
+          "len(symptoms_options_list)>0",
+          "'incomplete_symptom' in rco.keys()",
+          "incomplete_symptom not in incomplete_symptoms_list"
+        ]
+      ],
+      "formula": "self.temp_vars.pop('incomplete_symptom', None)"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'incomplete_symptom' not in chief_complaint_user_input.keys()",
+          "'body_part' in chief_complaint_user_input.keys()",
+          "'symptoms_options_list' in rco.keys()",
+          "len(symptoms_options_list)>0",
+          "'incomplete_symptom' in rco.keys()",
+          "incomplete_symptom in incomplete_symptoms_list"
+        ]
+      ],
+      "formula": "[]",
+      "type": "chief_complaint_user_input['incomplete_symptom']"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'incomplete_symptom' in chief_complaint_user_input.keys()",
+          "'body_part' in chief_complaint_user_input.keys()",
+          "'incomplete_symptom' in rco.keys()"
+        ]
+      ],
+      "formula": "chief_complaint_user_input['incomplete_symptom'].append(incomplete_symptom)"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'mapped_symptom' in chief_complaint_user_input.keys()",
+          "'symptom' not in chief_complaint_user_input.keys()"
+        ],
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'symptoms_options_list' in rco.keys()",
+          "'symptom' in rco.keys()",
+          "'symptom' not in chief_complaint_user_input.keys()"
+        ],
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'ic_symptom_options_list' in rco.keys()",
+          "'symptom' in rco.keys()",
+          "'symptom' not in chief_complaint_user_input.keys()"
+        ]
+      ],
+      "formula": "[]",
+      "type": "chief_complaint_user_input['symptom']"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'mapped_symptom' in chief_complaint_user_input.keys()",
+          "chief_complaint_user_input['mapped_symptom'] != 'None'"
+        ]
+      ],
+      "formula": "chief_complaint_user_input['symptom'].append(chief_complaint_user_input['mapped_symptom'])"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'symptom' in chief_complaint_user_input.keys()",
+          "symptom != 'None'"
+        ]
+      ],
+      "formula": "chief_complaint_user_input['symptom'].append(symptom)"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'symptom' in chief_complaint_user_input.keys()",
+          "len(chief_complaint_user_input['symptom'])>0"
+        ]
+      ],
+      "formula": "chief_complaint_user_input['symptom'][int(i)].lower()",
+      "list_length": "len(chief_complaint_user_input['symptom'])",
+      "list_type": "True",
+      "type": "primary_symptom_list"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'chief_complaint_user_input' in rco.keys()",
+          "'mapped_symptom' in chief_complaint_user_input.keys()",
+          "'mapped_symptom' == 'None'",
+          "len(chief_complaint_user_input['symptom'])==0",
+          "len(primary_symptom_list)==0"
+        ]
+      ],
+      "formula": "self.temp_vars.pop('chief_complaint_user_input', None)"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'primary_symptom_list' in self.temp_vars",
+          "len(primary_symptom_list)==0"
+        ]
+      ],
+      "formula": "self.temp_vars.pop('chief_complaint_user_input',None)"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'primary_symptom_list' not in self.temp_vars",
+          "'symptom_string' in self.temp_vars"
+        ]
+      ],
+      "formula": "[self.temp_vars['symptom_string']]",
+      "type": "primary_symptom_list"
+    },
+    {
+      "comment": "#Block to start from the chief complaint question again",
+      "conditions": [
+        [
+          "'primary_symptom_list' in self.temp_vars",
+          "len(primary_symptom_list)==0"
+        ]
+      ],
+      "goto_index": "2",
+      "instruction": "Sorry, I couldn't understand your health complaint. Can you please rephrase and try again?"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'primary_symptom_list' in rco.keys()",
+          "len(primary_symptom_list) > 0"
+        ]
+      ],
+      "formula": "primary_symptom_list[0].lower()",
+      "type": "primary_symptom"
+    },
+    {
+      "calculated_variable": "True",
+      "conditions": [
+        [
+          "'primary_symptom_list' in rco.keys()",
+          "len(primary_symptom_list) > 0"
+        ]
+      ],
+      "formula": "primary_symptom_list",
+      "type": "symptom_list"
+    },
+    {
+      "calculated_variable": "True",
+      "formula": "'!'.join(primary_symptom_list)",
+      "type": "chief_complaint_string"
+    },
+    {
+      "conditions": [
+        [
+          "'proceed_to_probing_flag' in rco.keys()",
+          "proceed_to_probing_flag.lower() == 'proceed'"
+        ],
+        [
+          "'proceed_to_probing_flag' not in rco.keys()"
+        ]
+      ],
+      "function": "elth-diagnosis-function-collecting-additional-symptoms"
+    },
+    {
+      "conditions": [
+        [
+          "'proceed_to_probing_flag' in rco.keys()",
+          "proceed_to_probing_flag.lower() == 'not now'"
+        ]
+      ],
+      "function": "elth-patient-registration-case-sheet-prep-function"
+    }
+  ],
+  "scores_and_values": {}
+}
